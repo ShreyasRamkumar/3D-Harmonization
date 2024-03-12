@@ -17,9 +17,8 @@ class Augmentation():
     def augment(self):
         selected_augmentations = []
         for i in range(4):
-            index = randint(0, len(self.augmentations)) 
+            index = randint(0, len(self.augmentations) - 1) 
             selected_augmentations.append(self.augmentations[index]) 
-            self.augmentations.remove(index)
         transforms = Compose(selected_augmentations)
         for i in tqdm(listdir(self.input_folder)):
             image = ScalarImage(f"{self.input_folder}/{i}/anat/{i}_T1w.nii")
