@@ -28,5 +28,4 @@ class Augmentation():
 
 if __name__ == "__main__":
     for i in listdir("./data"):
-        aug = Augmentation("./clean", f"./data/{i}")
-        aug.augment()
+        augs = Augmentation(f"./data/{i}/anat/", f"./data/{i}/anat/")
