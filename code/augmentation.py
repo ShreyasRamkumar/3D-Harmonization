@@ -9,11 +9,11 @@ class Augmentation():
         self.input_folder = f"{input_folder}/anat/"
         self.output_folder = output_folder
         self.augmentations = [RandomMotion(degrees=randint(1, 6), translation=randint(1, 6), num_transforms=randint(2, 4)), 
-                              RandomGhosting(num_ghosts=randint(4, 10), intensity=randint(3)), 
+                              RandomGhosting(num_ghosts=randint(4, 10), intensity=randint(0, 3)), 
                               RandomBiasField(coefficients=randint(0, 2), order=randint(1, 3)), 
                               RandomBlur(std=(randint(2, 5), randint(1, 5), randint(2, 5))), 
                               RandomNoise(mean=randint(1, 3), std=1), 
-                              RandomGamma(log_gamma=uniform(-0.3, 0.3))]
+                              RandomGamma(log_gamma=uniform(0, 1))]
     def augment(self):
         selected_augmentations = []
         for i in range(4):
@@ -29,3 +29,4 @@ class Augmentation():
 if __name__ == "__main__":
     for i in listdir("./data"):
         augs = Augmentation(f"./data/{i}/anat/", f"./data/{i}/anat/")
+        augs.augment()
