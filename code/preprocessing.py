@@ -190,6 +190,12 @@ class DatasetPreparation(Preprocessing):
             print("Image normalized!")
             norm_img_array = np.array(normalized_image)
             norm_img_nifti = nib.Nifti1Image(norm_img_array, affine=np.eye(4))
-            nib.save(norm_img_nifti, f"{super().output_folder}/{i}")
+            nib.save(norm_img_nifti, f"{super().output_folder}/{i}_T1w.nii")
             print("Enhancement Successful!")
+
+if __name__ == "__main__":
+    dp = DatasetPreparation("./data/scanner_1/anat/", "./data/scanner_1_processed/anat/")
+    dp.baselineImprov()
+    dp = DatasetPreparation("./data/scanner_2/anat", "./data/scanner_2_processed/anat")
+    dp.baselineImprov()
 
