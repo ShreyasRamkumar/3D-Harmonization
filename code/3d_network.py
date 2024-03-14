@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, Dataset
 import nibabel as nib
 import numpy as np
 from lightning.pytorch.callbacks import Callback
-import Network_Utility
+import network_utility as Network_Utility
 
 scanner_1_directory = "/home/ramkumars@acct.upmchs.net/Projects/3D-Harmonization/data/scanner_1/" # CHANGE FOR WHEN USING JENKINS
 scanner_2_directory = "/home/ramkumars@acct.upmchs.net/Projects/3D-Harmonization/data/scanner_2/" # CHANGE FOR WHEN USING JENKINS
