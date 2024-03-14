@@ -8,35 +8,37 @@ import numpy as np
 from lightning.pytorch.callbacks import Callback
 import Network_Utility
 
+scanner_1_directory = "/home/ramkumars@acct.upmchs.net/Projects/3D-Harmonization/data/scanner_1/" # CHANGE FOR WHEN USING JENKINS
+scanner_2_directory = "/home/ramkumars@acct.upmchs.net/Projects/3D-Harmonization/data/scanner_2/" # CHANGE FOR WHEN USING JENKINS
+harmonized_directory = "/home/ramkumars@acct.upmchs.net/Projects/3D-Harmonization/data/harmonized/" # CHANGE FOR WHEN USING JENKINS
+
 # Model Class
 class Unet(pl.LightningModule):
     def __init__(self,learning_rate=1e-3):
         super().__init__()
         # hyperparameters
         self.learning_rate = learning_rate
-        self.criterion = 0 # replace loss function
-        self.testing_outputs = []
-        self.validation_outputs = []
+        self.criterion = nn.MSELoss()
         
         # definition of neural network (naming convention = o_number of channels_encode/decode_up/down/side)
         self.o_16_encode_side = Network_Utility.conv_3d(1, 16)
-        self.o_16_encode_down = Network_Utility.down_convolution(16, 16)
-        self.o_32_encode_side = Network_Utility.convolution(16, 32)
-        self.o_32_encode_down = Network_Utility.down_convolution(32, 32)
-        self.o_64_encode_side = Network_Utility.convolution(32, 64)
-        self.o_64_encode_down = Network_Utility.down_convolution(64, 64)
-        self.o_128_encode_side = Network_Utility.convolution(64, 128)
-        self.o_128_encode_down = Network_Utility.down_convolution(128, 128)
-        self.o_256_encode_side = Network_Utility.convolution(128, 256)
-        self.o_128_decode_up = Network_Utility.up_convolution(256, 128)
-        self.o_128_decode_side = Network_Utility.convolution(256, 128)
-        self.o_64_decode_up = Network_Utility.up_convolution(128, 64)
-        self.o_64_decode_side = Network_Utility.convolution(128, 64)
-        self.o_32_decode_up = Network_Utility.up_convolution(64, 32)
-        self.o_32_decode_side = Network_Utility.convolution(64, 32)
-        self.o_16_decode_up = Network_Utility.up_convolution(32, 16)
-        self.o_16_decode_side = Network_Utility.convolution(32, 16)
-        self.o_1_decode_side = Network_Utility.final_convolution(17, 1)
+        self.o_16_encode_down = Network_Utility.down_conv_3d(16, 16)
+        self.o_32_encode_side = Network_Utility.conv_3d(16, 32)
+        self.o_32_encode_down = Network_Utility.down_conv_3d(32, 32)
+        self.o_64_encode_side = Network_Utility.conv_3d(32, 64)
+        self.o_64_encode_down = Network_Utility.down_conv_3d(64, 64)
+        self.o_128_encode_side = Network_Utility.conv_3d(64, 128)
+        self.o_128_encode_down = Network_Utility.down_conv_3d(128, 128)
+        self.o_256_encode_side = Network_Utility.conv_3d(128, 256)
+        self.o_128_decode_up = Network_Utility.up_conv_3d(256, 128)
+        self.o_128_decode_side = Network_Utility.conv_3d(256, 128)
+        self.o_64_decode_up = Network_Utility.up_conv_3d(128, 64)
+        self.o_64_decode_side = Network_Utility.conv_3d(128, 64)
+        self.o_32_decode_up = Network_Utility.up_conv_3d(64, 32)
+        self.o_32_decode_side = Network_Utility.conv_3d(64, 32)
+        self.o_16_decode_up = Network_Utility.up_conv_3d(32, 16)
+        self.o_16_decode_side = Network_Utility.conv_3d(32, 16)
+        self.o_1_decode_side = Network_Utility.final_conv_3d(17, 1)
     
     # forward pass
     def forward(self, image):
@@ -66,8 +68,6 @@ class Unet(pl.LightningModule):
         x_16_decode = self.o_16_decode_side(x_32_decode_cat) # has a shape of [1, 16, 256, 256]
         x_16_decode_cat = torch.cat([x_16_decode, image], 1) # has a shape of [1, 17, 256, 256]
         final_image = self.o_1_decode_side(x_16_decode_cat)
-
-        assert final_image.shape == image.shape
         
         return final_image
 
@@ -112,8 +112,8 @@ class MRIDataModule(pl.LightningDataModule):
         self.ground_truth_testing = []
         self.validation = []
         self.ground_truth_validation = []
-        self.input_files = os.listdir(x_directory)
-        self.ground_truth_files = os.listdir(y_directory)
+        self.input_files = os.listdir(scanner_1_directory)
+        self.ground_truth_files = os.listdir(scanner_2_directory)
 
     def setup(self, stage: str):
         # set up training, testing, validation split
@@ -163,29 +163,23 @@ class MRIDataset(Dataset):
 
     def __getitem__(self, index):
         scan_path = self.model_input[index]
-        intermediate_scan_list = os.listdir(f"{x_directory}/{scan_path}/anat/")
-        scan = nib.load(f"{x_directory}/{scan_path}/anat/{intermediate_scan_list[0]}")
+        intermediate_scan_list = os.listdir(f"{scanner_1_directory}/{scan_path}/anat/")
+        scan = nib.load(f"{scanner_1_directory}/{scan_path}/anat/{intermediate_scan_list[0]}")
         scan_array = scan.get_fdata()
         scan_tensor = torch.tensor(scan_array, dtype=torch.float32)
-        slice_index = Network_Utility.get_slice(scan_tensor=scan_tensor)
-        scan_slice = scan_tensor[:, :, slice_index]
-        scan_slice = scan_slice[None, :, :]
 
         ground_truth_scan_path = self.ground_truth[index]
-        intermediate_scan_list = os.listdir(f"{x_directory}/{ground_truth_scan_path}/anat/")
-        ground_truth_scan = nib.load(f"{x_directory}/{ground_truth_scan_path}/anat/{intermediate_scan_list[0]}")
+        intermediate_scan_list = os.listdir(f"{scanner_1_directory}/{ground_truth_scan_path}/anat/")
+        ground_truth_scan = nib.load(f"{scanner_1_directory}/{ground_truth_scan_path}/anat/{intermediate_scan_list[0]}")
         ground_truth_scan_array = ground_truth_scan.get_fdata()
         ground_truth_scan_tensor = torch.tensor(ground_truth_scan_array, dtype=torch.float32)
-        ground_truth_scan_slice = ground_truth_scan_tensor[:, :, slice_index]
-        ground_truth_scan_slice = ground_truth_scan_slice[None, :, :]
 
-        return {"scan": scan_slice, "ground_truth": ground_truth_scan_slice}
+        return {"scan": scan_tensor, "ground_truth": ground_truth_scan_tensor}
 
 
 if __name__ == "__main__":
     mri_data = MRIDataModule(batch_size=4)
     model = Unet()
-    callbacks = Callbacks()
-    train = pl.Trainer(max_epochs=200, accelerator="gpu", devices=1, callbacks=[callbacks])
+    train = pl.Trainer(max_epochs=200, accelerator="gpu", devices=1)
     train.fit(model, mri_data)
     train.test(model, mri_data)

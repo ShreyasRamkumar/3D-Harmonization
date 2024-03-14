@@ -31,21 +31,12 @@ class Network_Utility():
         return run
 
     @staticmethod
-    def final_convolution(in_c, out_c):
+    def final_conv_3d(in_c, out_c):
         run = nn.Sequential(
             nn.Conv3d(in_channels=in_c, out_channels=out_c, kernel_size=1),
             nn.ReLU()
         )
         return run
-    
-    @staticmethod
-    def crop_tensor(target_tensor, tensor):
-        target_size = target_tensor.size()[2]
-        tensor_size = tensor.size()[2]
-        delta = tensor_size - target_size
-        delta = delta // 2
-
-        return tensor[:, :, delta:tensor_size- delta, delta:tensor_size-delta]
     
     @staticmethod
     def create_data_splits(dataset_len):
