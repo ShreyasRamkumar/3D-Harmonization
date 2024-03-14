@@ -178,8 +178,8 @@ class DatasetPreparation(Preprocessing):
         """
         denoise = sitk.MinMaxCurvatureFlowImageFilter()
         for i in tqdm(self.input_files):
-            image_path = os.listdir(f"{super().input_folder}/{i}/anat")
-            image = sitk.ReadImage(f"{super().input_folder}/{i}/anat/{image_path}", sitk.sitkFloat32)
+            image_path = f"{super().input_folder}/{i}/anat/{i}_T1w.nii"
+            image = sitk.ReadImage(image_path, sitk.sitkFloat32)
             image_mask = super().createMRIMask(image_path, image_created=True)
             bias_corrected_image = super().correctBias(input_image_path=None, image_created=True, image=image, image_mask=image_mask)
             denoised_image = denoise.Execute(bias_corrected_image)
