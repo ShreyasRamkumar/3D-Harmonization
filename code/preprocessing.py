@@ -145,7 +145,7 @@ class DatasetPreparation(Preprocessing):
         training_folder_path (str, optional): The folder that will store training scans. Defaults to None.
         ideal_folder_path (str, optional): The folder that will store ideal or ground truth scans. Defaults to None.
     """
-    def __init__(self, input_folder_path, training_folder_path=None, ideal_folder_path=None) -> None:
+    def __init__(self, input_folder, output_folder) -> None:
         """
         Initializes DatasetPreparation object.
 
@@ -154,23 +154,8 @@ class DatasetPreparation(Preprocessing):
             training_folder_path (str, optional): The path to the folder that stores the training scans. Defaults to None.
             ideal_folder_path (str, optional): The path to the folder that will store the ideal scans. Defaults to None.
         """
-        self.input_folder_path = input_folder_path
-        if training_folder_path != None:
-            self.training_folder_path = training_folder_path
-        if ideal_folder_path != None:
-            super().__init__(self.input_folder_path, ideal_folder_path)
-    
-    def create_training_data(self):
-        """
-        Creates training data by applying random bias field, random motion, and random noise to input scans.
-        """
-        transforms = tio.transforms.Compose([tio.transforms.RandomBiasField(coefficients=1, order=3), 
-                                             tio.transforms.RandomMotion(degrees=4, translation=4, num_transforms=2), 
-                                             tio.transforms.RandomNoise(mean=2, std=1)])
-        for i in tqdm(self.input_files):
-            image = tio.ScalarImage(f"{self.input_folder_path}/{i}")
-            augmented_image = transforms(image)
-            augmented_image.save(f"{self.output_folder_path}/{i}")
+        Preprocessing.__init__(self, input_folder, output_folder)
+        self.input_files = os.listdir(input_folder)
     
     def baselineImprov(self):
         """
@@ -178,24 +163,32 @@ class DatasetPreparation(Preprocessing):
         """
         denoise = sitk.MinMaxCurvatureFlowImageFilter()
         for i in tqdm(self.input_files):
-            image_path = f"{super().input_folder}/{i}/anat/{i}_T1w.nii"
+            image_path = f"{self.input_folder}/{i}/anat/{i}_T1w.nii"
             image = sitk.ReadImage(image_path, sitk.sitkFloat32)
             image_mask = super().createMRIMask(image_path, image_created=True)
             bias_corrected_image = super().correctBias(input_image_path=None, image_created=True, image=image, image_mask=image_mask)
+            
             denoised_image = denoise.Execute(bias_corrected_image)
             print("Image denoised!")
+            
             image_array = sitk.GetArrayFromImage(denoised_image)
             image_tensor = torch.tensor(image_array, dtype=torch.float32)
             normalized_image = super().minMaxNormalization(image_tensor)
             print("Image normalized!")
+            
             norm_img_array = np.array(normalized_image)
             norm_img_nifti = nib.Nifti1Image(norm_img_array, affine=np.eye(4))
-            nib.save(norm_img_nifti, f"{super().output_folder}/{i}_T1w.nii")
+            nib.save(norm_img_nifti, f"{self.output_folder}/{i}_T1w.nii")
             print("Enhancement Successful!")
 
 if __name__ == "__main__":
-    dp = DatasetPreparation("./data/scanner_1/anat/", "./data/scanner_1_processed/anat/")
+    directory_1 = "/home/ramkumars@acct.upmchs.net/Projects/3D-Harmonization/data/scanner_1/anat"
+    directory_1_out = "/home/ramkumars@acct.upmchs.net/Projects/3D-Harmonization/data/scanner_1_processed"
+    directory_2 = "/home/ramkumars@acct.upmchs.net/Projects/3D-Harmonization/data/scanner_2/anat"
+    directory_2_out = "/home/ramkumars@acct.upmchs.net/Projects/3D-Harmonization/data/scanner_2_processed"
+
+    dp = DatasetPreparation(directory_1, directory_1_out)
     dp.baselineImprov()
-    dp = DatasetPreparation("./data/scanner_2/anat", "./data/scanner_2_processed/anat")
+    dp = DatasetPreparation(directory_2, directory_2_out)
     dp.baselineImprov()
 
