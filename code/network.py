@@ -85,6 +85,7 @@ class Unet(pl.LightningModule):
         self.o_1_decode_side = Network_Utility.final_conv_3d(17, 1)
     
     # forward pass
+    @staticmethod
     def forward(self, image):
         # naming convention: x_number of channels_encode/decode_up/down/nothing(side convolution)
         
