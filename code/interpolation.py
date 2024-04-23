@@ -1,41 +1,101 @@
-import numpy as np
+from numpy import zeros, array, arange, delete, ones_like, empty_like, std
+from numpy.random import rand
 import matplotlib.pyplot as plt
-from random import sample
+from random import randint
 
-class Interpolation:
-    def divided_diff(self, x, y):
-        n = len(y)
-        coef = np.zeros([n, n])
-        coef[:, 0] = y
-
+class Interpolator:
+    def __init__(self, x, y):
+        """
+        Initialize the MatrixInterpolator with x-coordinates and corresponding matrices.
+        
+        Args:
+            x (list): A list of x-coordinates for the data points.
+            y (list): A list of matrices corresponding to the x-coordinates.
+        """
+        self.x = x
+        self.y = y
+        self.n = len(x)
+        self.coef = self._calculate_coefficients()
+    
+    def _calculate_coefficients(self):
+        """
+        Calculate the coefficients of the interpolating polynomial.
+        
+        Returns:
+            numpy.ndarray: A 3D array of coefficients.
+        """
+        n = self.n
+        coef = zeros((n, n, 256, 256))  # Initialize coefficient matrix (last two constants determine shape of matrix)
+        
+        # Initialize the first row of the coefficient matrix
+        for i in range(n):
+            coef[i, 0] = self.y[:, :, i]
+        
+        # Calculate the remaining coefficients
         for j in range(1, n):
-            for i in range(n-j):
-                coef[i][j] = (coef[i+1][j-1] - coef[i][j-1]) / (x[i+j]-x[i])
+            for i in range(n - j):
+                numerator = coef[i + 1, j - 1] - coef[i, j - 1]
+                denominator = self.x[i + j] - self.x[i]
+                coef[i, j] = numerator / denominator
         
         return coef
-
-    def newton_poly(self, coef, x_data, x):
-        n = len(x_data) - 1
-        p = coef[n]
-        for k in range(1, n+1):
-            p = coef[n-k] + (x - x_data[n-k]) * p
-        return p
     
+    def interpolate(self, x_vals):
+        """
+        Evaluate the interpolating polynomial at a given point x_val.
+        
+        Args:
+            x_val (float): The value of x at which to evaluate the polynomial.
+            
+        Returns:
+            numpy.ndarray: The interpolated matrix at x_val.
+        """
+        results = []
+
+        for x_val in x_vals:
+            n = self.n
+            coef = self.coef
+            result = coef[0, 0]
+            for j in range(1, n):
+                term = coef[0, j]
+                for i in range(j):
+                    term = term * (x_val - self.x[i])
+                result += term
+            results.append(result)
+        return results
+
+
+def generate_non_consecutive_integers(start, end, count):
+    result = []
+    while len(result) < count:
+        num = randint(start, end)
+        if not result or abs(num - result[-1]) > 1:
+            result.append(num)
+    return result
+
 if __name__ == "__main__":
-    ints = sample((30, 180), 90)
+    replacement_indices = generate_non_consecutive_integers(30, 180, 50)  # Create a list of numbers from 1 to length
     
-    interp = Interpolation()
-    x = np.array([-5, -1, 0, 2])
-    y = np.array([-2, 6, 1, 3])
-    # get the divided difference coef
-    a_s = interp.divided_diff(x, y)[0, :]
+    scan = rand(256, 256, 192)
+    gd = []
+    gd_count = 1
+    input_indices = []
 
-    # evaluate on new data points
-    x_new = np.arange(-5, 2.1, .1)
-    y_new = interp.newton_poly(a_s, x, x_new)
+    for i in range(192): # SOMETHING IS BROKEN HERE
+        if i in replacement_indices:
+            gd.append(scan[:, :, i])
+            delete(scan, i, axis=2)
+            gd_count += 1
+        else:
+            input_indices.append(i)
 
-    plt.figure(figsize = (12, 8))
-    plt.plot(x, y, 'bo')
-    plt.plot(x_new, y_new)
-    plt.savefig("x.jpg")
+    interp = Interpolator(input_indices, scan)
+    interpolated_matrices = interp.interpolate(replacement_indices)
+
+    diff = array(gd) - array(interpolated_matrices)
+    std_diff = std(diff)
+    print(f"diff = {diff}, stddev = {std_diff}")
+
+
+    
 
