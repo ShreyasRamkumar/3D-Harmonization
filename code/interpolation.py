@@ -66,19 +66,20 @@ class Interpolator:
 
 
 def generate_non_consecutive_integers(start, end, count):
-    result = []
-    while len(result) < count:
+    numbers = set()
+    while len(numbers) < count:
         num = randint(start, end)
-        if not result or abs(num - result[-1]) > 1:
-            result.append(num)
-    return result
+        if num not in numbers and (len(numbers) == 0 or abs(num - sorted(numbers)[-1]) > 1):
+            numbers.add(num)
+    return list(numbers)
 
 if __name__ == "__main__":
     replacement_indices = generate_non_consecutive_integers(30, 180, 50)  # Create a list of numbers from 1 to length
-    
+    replacement_indices.sort()
+
     scan = rand(256, 256, 192)
     gd = []
-    gd_count = 1
+    gd_count = 0
     input_indices = []
 
     for i in range(192): # SOMETHING IS BROKEN HERE
