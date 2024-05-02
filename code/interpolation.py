@@ -82,7 +82,7 @@ if __name__ == "__main__":
     gd_count = 0
     input_indices = []
 
-    for i in range(192): # SOMETHING IS BROKEN HERE
+    for i in range(192):
         if i in replacement_indices:
             gd.append(scan[:, :, i])
             delete(scan, i, axis=2)
